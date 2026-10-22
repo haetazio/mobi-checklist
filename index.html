@@ -49,6 +49,8 @@ chars:Object.fromEntries(SV.map(s=>[s,[]]))}}
 let S;const KEY='hw_v1';
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.items)S=def();
+// 카테고리(그룹) 목록: 예전 데이터는 새 형식으로 변환
+function mig(){if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}}mig();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ask('저장 공간이 부족해요. 백업을 해주세요.')}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const open=new Set(),gv=new Set();let picC=null,editMode=false,cb=null;
@@ -63,7 +65,7 @@ function render(){
  $('#app').innerHTML=`<div class="tabs">${SV.map(s=>`<button data-a="sv" data-v="${s}" class="${s==S.cur?'on':''}">${s} (${(S.chars[s]||[]).length})</button>`).join('')}</div>
  <div class="bar"><b>현재 서버: ${S.cur}</b><div class="hd"><button data-a="addc">+ 캐릭터 추가</button>
  <button class="g" data-a="rs" data-m="d">서버 매일 초기화</button><button class="g" data-a="rs" data-m="w">서버 전체 초기화(주간 포함)</button></div></div>
- ${editMode?'<p class="mu">✏️ 항목 편집 중이에요. 이름 수정, 매일/주간 선택, 체크 칸 수, ⧉ 복제, ✕ 삭제, “+ 항목 추가”를 할 수 있어요(모든 캐릭터에 공통 적용). 끝나면 위의 “편집 끝”을 눌러주세요.</p>':''}${cs.length?'':'<p class="mu">아직 캐릭터가 없어요. “+ 캐릭터 추가”를 눌러보세요.</p>'}
+ ${editMode?'<p class="mu">✏️ 항목 편집 중이에요. 이름 수정, 매일/주간 선택, 체크 칸 수, ⧉ 복제, ✕ 삭제, 카테고리 이름·순서(▲▼) 변경, “+ 항목 추가”를 할 수 있어요(모든 캐릭터에 공통 적용). 끝나면 위의 “편집 끝”을 눌러주세요.</p>':''}${cs.length?'':'<p class="mu">아직 캐릭터가 없어요. “+ 캐릭터 추가”를 눌러보세요.</p>'}
  <div class="grid">${cs.map(card).join('')}</div>`;
 }
 function card(c){
@@ -95,11 +97,11 @@ function sum(c){
  return`<b>📋 룬 한눈에</b><div>${R||'아직 없어요'}</div><b>💎 보석 한눈에</b>${G||'<div>아직 없어요</div>'}`;
 }
 function hw(c){
- return GR.map((g,gi)=>{const its=S.items.filter(i=>i.g==gi);if(!its.length&&!editMode)return'';
- return`<div class="gt">${g}</div>`+its.map(i=>{const n=c.ck?.[i.id]||0;
+ return S.groups.map(G=>{const gi=G.id,its=S.items.filter(i=>i.g==gi);if(!its.length&&!editMode)return'';
+ return`<div class="gt">${editMode?`<span class="hd" data-gid="${gi}"><input type="text" data-f="gname" value="${esc(G.n)}" style="width:140px"><button class="s g" data-a="gup">▲</button><button class="s g" data-a="gdn">▼</button><button class="s r" data-a="gdel">✕</button></span>`:esc(G.n)}</div>`+its.map(i=>{const n=c.ck?.[i.id]||0;
  if(editMode)return`<div class="it" data-i="${i.id}"><input type="text" class="l" data-f="in" value="${esc(i.n)}" style="flex:1"><select data-f="ic"><option value="d" ${i.c=='d'?'selected':''}>매일</option><option value="w" ${i.c=='w'?'selected':''}>주간</option></select><input type="number" min="1" max="9" data-f="ik" value="${i.k}" style="width:46px" title="체크 칸 수"><button class="s g" data-a="dupi" title="복제">⧉</button><button class="s r" data-a="deli">✕</button></div>`;
  return`<div class="it"><span class="l">${esc(i.n)}</span><span class="bd">${i.c=='d'?'매일':'주간'}</span>`+
- Array.from({length:i.k},(_,x)=>`<input type="checkbox" data-a="ck" data-i="${i.id}" data-x="${x}" ${x<n?'checked':''}>`).join('')+`</div>`}).join('')+(editMode?`<button class="s g" data-a="addi" data-g="${gi}">+ 항목 추가</button>`:'')}).join('');
+ Array.from({length:i.k},(_,x)=>`<input type="checkbox" data-a="ck" data-i="${i.id}" data-x="${x}" ${x<n?'checked':''}>`).join('')+`</div>`}).join('')+(editMode?`<button class="s g" data-a="addi" data-g="${gi}">+ 항목 추가</button>`:'')}).join('')+(editMode?'<button class="s" data-a="addg" style="margin-top:10px">+ 카테고리 추가</button>':'');
 }
 function gearOld(c){
  c.gear=c.gear||{};
@@ -148,7 +150,10 @@ document.addEventListener('click',e=>{
  else if(a=='yes'){const f=cb;cb=null;$('#mo').innerHTML='';if(f)f()}
  else if(a=='no'){cb=null;$('#mo').innerHTML=''}
  else if(a=='close'){$('#mo').innerHTML='';render()}
- else if(a=='addi'){{const g=+b.dataset.g,l=S.items.filter(i=>i.g==g).pop();S.items.push(mk(g,'새 항목',l?l.c:'d',l?l.k:1))}save();render()}
+ else if(a=='addi'){{const g=b.dataset.g,l=S.items.filter(i=>i.g==g).pop();S.items.push(mk(g,'새 항목',l?l.c:'d',l?l.k:1))}save();render()}
+ else if(a=='gup'||a=='gdn'){const id=b.closest('[data-gid]').dataset.gid,L=S.groups,x=L.findIndex(g=>g.id==id),y=x+(a=='gup'?-1:1);if(y>=0&&y<L.length){[L[x],L[y]]=[L[y],L[x]];save();render()}}
+ else if(a=='gdel'){const id=b.closest('[data-gid]').dataset.gid;ask('이 카테고리와 안의 항목을 모두 삭제할까요? (체크 기록도 사라져요)',()=>{S.groups=S.groups.filter(g=>g.id!=id);S.items=S.items.filter(i=>i.g!=id);save();render()})}
+ else if(a=='addg'){S.groups.push({id:uid(),n:'새 카테고리'});save();render()}
  else if(a=='dupi'){const id=b.closest('[data-i]').dataset.i,x=S.items.findIndex(i=>i.id==id);S.items.splice(x+1,0,{...S.items[x],id:uid()});save();render()}
  else if(a=='deli'){const id=b.closest('[data-i]').dataset.i;ask('이 항목을 삭제할까요? (체크 기록도 사라져요)',()=>{S.items=S.items.filter(i=>i.id!=id);save();render()})}
  else if(a=='exp'){const u=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='숙제백업.json';l.click()}
@@ -161,6 +166,7 @@ document.addEventListener('input',e=>{
  const cd=t.closest('[data-c]'),c=cd&&S.chars[S.cur].find(x=>x.id==cd.dataset.c);
  if(f=='name')c.name=t.value;
  else if(f=='rune'){c.gear[t.dataset.p].rune=t.value;t.closest('details').querySelector('small').textContent=t.value||'룬 미입력'}
+ else if(f=='gname')S.groups.find(g=>g.id==t.closest('[data-gid]').dataset.gid).n=t.value;
  else if(f=='gn')c.gear[t.dataset.p].gems[t.dataset.g].n=t.value;
  else if(f=='go')c.gear[t.dataset.p].gems[t.dataset.g].o[t.dataset.o]=t.value;
  else{const i=S.items.find(x=>x.id==t.closest('[data-i]').dataset.i);
@@ -174,7 +180,7 @@ $('#fp').onchange=e=>{const f=e.target.files[0];if(!f||!picC)return;const r=new 
   picC.img=cv.toDataURL('image/jpeg',.8);save();render()};im.src=r.result};r.readAsDataURL(f);e.target.value=''};
 // 복원
 $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
- r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.chars)throw 0;ask('현재 기록을 백업 파일로 덮어쓸까요?',()=>{S=d;theme();save();render()});}catch(x){ask('올바른 백업 파일이 아니에요.')}};
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.chars)throw 0;ask('현재 기록을 백업 파일로 덮어쓸까요?',()=>{S=d;mig();theme();save();render()});}catch(x){ask('올바른 백업 파일이 아니에요.')}};
  r.readAsText(f);e.target.value=''};
 // 색상 테마: 색상 슬라이더(0~360) + 밝게/어둡게
 function theme(){const t=S.theme||(S.theme={h:335,d:false}),h=t.h,d=t.d,r=document.documentElement.style;
