@@ -28,7 +28,7 @@ details{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 
 .o{display:grid;grid-template-columns:2fr 1fr;gap:4px}
 .mo{position:fixed;inset:0;background:#000a;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}
 .mo>div{background:var(--card);border-radius:12px;padding:14px;width:min(560px,100%)}
-.mu{color:var(--mu);font-size:12px}.card{box-shadow:0 2px 8px rgba(0,0,0,.12)}input[type=password]{background:var(--in);color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font:inherit}
+.mu{color:var(--mu);font-size:12px}.card{box-shadow:0 2px 8px rgba(0,0,0,.12)}.cd{margin:10px 0 0;padding:7px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:13px}.cd b{color:var(--ti)}input[type=password]{background:var(--in);color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font:inherit}
 .sl{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(0 80% 70%),hsl(60 80% 70%),hsl(120 80% 70%),hsl(180 80% 70%),hsl(240 80% 70%),hsl(300 80% 70%),hsl(360 80% 70%))}
 .sl::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--ti)}.sl::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--ti)}.sum{margin-top:10px;font-size:12px;line-height:1.6}.sum b{color:var(--ti)}.sum div{border-top:1px dashed var(--line);padding:3px 0}
 #th{-webkit-appearance:none;appearance:none;width:130px;height:10px;border-radius:5px;background:linear-gradient(90deg,hsl(0 80% 70%),hsl(60 80% 70%),hsl(120 80% 70%),hsl(180 80% 70%),hsl(240 80% 70%),hsl(300 80% 70%),hsl(360 80% 70%))}
@@ -36,7 +36,7 @@ details{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 
 </style></head><body><div class="w">
 <div class="top"><h1>🎮 캐릭터 숙제 & 장비 관리</h1><div class="hd">
 <button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<button class="s g" data-a="pal">색상 설정</button></span><button data-a="cloud">☁ 기기 연동</button><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
-<div id="app"></div></div><div id="mo"></div>
+<div id="cd" class="cd"></div><div id="app"></div></div><div id="mo"></div>
 <input type="file" id="fi" accept=".json" hidden><input type="file" id="fp" accept="image/*" hidden>
 <script>
 // ---------- 기본 데이터 ----------
@@ -256,5 +256,10 @@ document.addEventListener('input',e=>{const t=e.target;if(t.id=='sh'||t.id=='sb'
 // 룬/보석 한눈에 보기 실시간 갱신
 document.addEventListener('input',e=>{const t=e.target,cd=t.closest('[data-c]'),s=cd&&cd.querySelector('.sum');
  if(s&&/^(rune|gn|go)$/.test(t.dataset.f))s.innerHTML=sum(S.chars[S.cur].find(x=>x.id==cd.dataset.c))});
-theme();render();pull();document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+// 리셋 카운트다운: 매일 06:00, 매주 월요일 06:00 (이 기기의 시간 기준)
+function tick(){const n=new Date(),d=new Date(n);d.setHours(6,0,0,0);if(d<=n)d.setDate(d.getDate()+1);
+ const w=new Date(n);w.setHours(6,0,0,0);w.setDate(w.getDate()+((8-w.getDay())%7));if(w<=n)w.setDate(w.getDate()+7);
+ const f=ms=>{const s=Math.floor(ms/1000),D=Math.floor(s/86400),H=Math.floor(s%86400/3600),M=Math.floor(s%3600/60);return(D?D+'일 ':'')+H+'시간 '+M+'분'};
+ $('#cd').innerHTML=`⏰ 매일 초기화(06:00)까지 <b>${f(d-n)}</b> · 주간 초기화(월 06:00)까지 <b>${f(w-n)}</b>`}
+theme();render();pull();tick();setInterval(tick,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
 </script></body></html>
