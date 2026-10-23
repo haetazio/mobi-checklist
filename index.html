@@ -50,7 +50,7 @@ details{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 
 // ---------- 기본 데이터 ----------
 const SV=['던컨','데이안','아이라','메이븐','라사','알리사','칼릭스','몰리'];
 const GR=['물물교환','재화','일일 콘텐츠','주간 레이드','주간 어비스','주말','기타'];
-const PARTS=[['무기',1],['장신구1',3],['장신구2',3],['장신구3',3],['엠블렘',1],['방어구1',3],['방어구2',3],['방어구3',3],['방어구4',3],['방어구5',3]];
+const PARTS=[['무기',3],['장신구1',1],['장신구2',1],['장신구3',1],['엠블렘',1],['방어구1',3],['방어구2',3],['방어구3',3],['방어구4',3],['방어구5',3]];
 const uid=()=>Math.random().toString(36).slice(2,9);
 const mk=(g,n,c,k=1)=>({id:uid(),g,n,c,k});
 function def(){return{cur:SV[0],items:[mk(1,'은동전','d'),mk(1,'공물','d'),mk(2,'요일 던전','d'),mk(2,'멤버십','d'),mk(2,'아르바이트','d'),
@@ -92,13 +92,13 @@ function card(c){
 // 장비 데이터 정리(예전 형식이면 새 형식으로 변환)
 function gd(c){c.gear=c.gear||{};PARTS.forEach(([p,n])=>{let g=c.gear[p];
  if(Array.isArray(g))g={rune:(g.find(x=>x.r)||{}).r||'',gems:g.map(x=>({n:x.r||'',o:x.o.map(y=>[y.n,y.v].filter(Boolean).join(' '))}))};
- if(!g||!g.gems)g={rune:'',gems:[]};
- while(g.gems.length<n)g.gems.push({n:'',o:['','','']});c.gear[p]=g})}
+ if(!g||!g.gems){g={rune:'',gems:[]};for(let i=0;i<n;i++)g.gems.push({n:'',o:['','','']})}
+ c.gear[p]=g})}
 function gear(c){gd(c);
  return PARTS.map(([p])=>{const g=c.gear[p];
   return`<details data-p="${p}" ${open.has(c.id+p)?'open':''}><summary>${p} <small>${esc(g.rune)||'룬 미입력'}</small></summary><div class="gem"><input type="text" data-f="rune" data-p="${p}" value="${esc(g.rune)}" placeholder="${p} 룬 이름"></div>`+
-  g.gems.map((m,gi)=>`<div class="gem"><div class="hd" style="margin-bottom:3px"><button class="s g" data-a="gcp" data-p="${p}" data-g="${gi}">💎 보석 복사</button><button class="s g" data-a="gps" data-p="${p}" data-g="${gi}">📋 붙여넣기</button></div><input type="text" data-f="gn" data-p="${p}" data-g="${gi}" value="${esc(m.n)}" placeholder="보석 ${gi+1} 이름">`+
-  m.o.map((o,oi)=>`<input type="text" data-f="go" data-p="${p}" data-g="${gi}" data-o="${oi}" value="${esc(o)}" placeholder="옵션 ${oi+1}">`).join('')+`</div>`).join('')+`</details>`}).join('')+`<div class="sum">${sum(c)}</div>`;
+  g.gems.map((m,gi)=>`<div class="gem"><div class="hd" style="margin-bottom:3px"><button class="s g" data-a="gcp" data-p="${p}" data-g="${gi}">💎 보석 복사</button><button class="s g" data-a="gps" data-p="${p}" data-g="${gi}">📋 붙여넣기</button><button class="s g" data-a="oa" data-p="${p}" data-g="${gi}">+옵션</button><button class="s g" data-a="ox" data-p="${p}" data-g="${gi}">−옵션</button><button class="s r" data-a="gx" data-p="${p}" data-g="${gi}">보석 삭제</button></div><input type="text" data-f="gn" data-p="${p}" data-g="${gi}" value="${esc(m.n)}" placeholder="보석 ${gi+1} 이름">`+
+  m.o.map((o,oi)=>`<input type="text" data-f="go" data-p="${p}" data-g="${gi}" data-o="${oi}" value="${esc(o)}" placeholder="옵션 ${oi+1}">`).join('')+`</div>`).join('')+`<button class="s g" data-a="ga" data-p="${p}" style="margin-top:6px">+ 보석 추가</button></details>`}).join('')+`<div class="sum">${sum(c)}</div>`;
 }
 // 룬/보석 한눈에 보기
 function sum(c){
@@ -143,6 +143,10 @@ document.addEventListener('click',e=>{
  else if(a=='rs')reset(S.chars[S.cur],b.dataset.m,'현재 서버 전체 캐릭터의');
  else if(a=='rc')reset([c],b.dataset.m,`“${c.name}”의`);
  else if(a=='pic'){picC=c;$('#fp').click()}
+ else if(a=='ga'){c.gear[b.dataset.p].gems.push({n:'',o:['','','']});save();render()}
+ else if(a=='gx'){const G=c.gear[b.dataset.p].gems,i=+b.dataset.g;ask('이 보석칸을 삭제할까요?',()=>{G.splice(i,1);save();render()})}
+ else if(a=='oa'){c.gear[b.dataset.p].gems[b.dataset.g].o.push('');save();render()}
+ else if(a=='ox'){c.gear[b.dataset.p].gems[b.dataset.g].o.pop();save();render()}
  else if(a=='gcp'){S.gclip=JSON.parse(JSON.stringify(c.gear[b.dataset.p].gems[b.dataset.g]));save();toast('보석 복사됨 ✓')}
  else if(a=='gps'){if(!S.gclip)return toast('먼저 복사해 주세요');c.gear[b.dataset.p].gems[b.dataset.g]=JSON.parse(JSON.stringify(S.gclip));save();render();toast('붙여넣었어요 ✓')}
  else if(a=='calc')calcUI();
