@@ -147,9 +147,9 @@ document.addEventListener('click',e=>{
  else if(a=='rc')reset([c],b.dataset.m,`“${c.name}”의`);
  else if(a=='pic'){picC=c;$('#fp').click()}
  else if(a=='cloud')cloudUI();
- else if(a=='cup')cloud('up');
- else if(a=='cdn')cloud('down');
- else if(a=='cout'){sset({key:'',auto:false});cloudUI()}
+ else if(a=='login')login();
+ 
+ else if(a=='cout'){try{sessionStorage.removeItem(SK);localStorage.removeItem(SK)}catch(e){}cloudUI()}
  else if(a=='pal')pal();
  else if(a=='pp'){const p=PRE[+b.dataset.i];Object.assign(S.theme,{h:p[1],b:p[2],d:!!p[3]});theme();save();pal()}
  else if(a=='dk'){S.theme.d=!S.theme.d;theme();save()}
@@ -199,10 +199,10 @@ function theme(){const t=S.theme||(S.theme={h:335,d:false});if(t.b==null)t.b=t.h
  for(const k in P)r.setProperty('--'+k,P[k]);r.colorScheme=d?'dark':'light';
  const k=document.getElementById('dk');if(k)k.textContent=d?'☀ 밝게':'☾ 어둡게'}
 // ---------- 기기 연동(Firebase Realtime Database REST) ----------
-const DBURL=''; // 여기에 데이터베이스 주소를 적어두면 매번 입력 안 해도 됨(선택)
+const DBURL='https://zzio-homework-default-rtdb.asia-southeast1.firebasedatabase.app'; // 여기에 데이터베이스 주소를 적어두면 매번 입력 안 해도 됨(선택)
 const SK='hw_sync';
-function sget(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}}
-function sset(o){try{localStorage.setItem(SK,JSON.stringify(Object.assign(sget(),o)))}catch(e){}}
+function sget(){try{return Object.assign({url:DBURL},JSON.parse(sessionStorage.getItem(SK)||localStorage.getItem(SK))||{})}catch(e){return{url:DBURL}}}
+function sset(o,keep){try{const f=Object.assign(sget(),o);delete f.url;sessionStorage.removeItem(SK);localStorage.removeItem(SK);(keep?localStorage:sessionStorage).setItem(SK,JSON.stringify(f))}catch(e){}}
 // 아이디+비밀번호를 해시로 바꿔 저장 위치 이름으로 사용(비밀번호 자체는 저장 안 함)
 async function hk(id,pw){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('hw|'+id.toLowerCase()+'|'+pw));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
 function msg(t){const e=$('#cm');if(e)e.textContent=t}
@@ -210,7 +210,7 @@ let at=null;
 function auto(){const f=sget();if(!f.key||!f.url||!f.auto)return;clearTimeout(at);at=setTimeout(()=>{fetch(f.url+'/u/'+f.key+'.json',{method:'PUT',body:JSON.stringify(S)}).catch(()=>{})},2500)}
 // 열 때/다시 보일 때 클라우드가 더 최신이면 가져오기
 async function pull(){const f=sget();if(!f.key||!f.auto)return;try{const r=await fetch(f.url+'/u/'+f.key+'.json');const d=r.ok&&await r.json();if(d&&d.items&&(d.ts||0)>(S.ts||0)){S=d;mig();theme();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render()}}catch(e){}}
-async function cloud(mode){
+async function cloudOld(mode){
  const url=$('#curl').value.trim().replace(/\/+$/,''),id=$('#cid').value.trim(),pw=$('#cpw').value;
  if(!url||!id||!pw)return msg('주소, 아이디, 비밀번호를 모두 입력해 주세요.');
  try{const k=await hk(id,pw),u=url+'/u/'+k+'.json';
@@ -220,13 +220,27 @@ async function cloud(mode){
    sset({url,id});ask('이 기기의 기록을 클라우드 기록으로 덮어쓸까요?',()=>{S=d;mig();theme();sset({key:k,auto:true});save();render()})}
  }catch(e){msg('연결에 실패했어요. 주소가 맞는지, Rules를 Publish 했는지 확인해 주세요.')}
 }
-function cloudUI(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>☁ 기기 연동</b><button data-a="close">닫기</button></div>
+function cloudUIOld(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>☁ 기기 연동</b><button data-a="close">닫기</button></div>
  <p class="mu">같은 아이디·비밀번호를 쓰면 폰과 컴퓨터의 기록이 같아져요. 비밀번호를 잊으면 복구할 수 없어요.</p>
  <p class="mu">데이터베이스 주소 (Firebase)</p><input type="text" id="curl" value="${esc(f.url||DBURL)}" placeholder="https://....firebasedatabase.app" style="width:100%">
  <p class="mu">아이디</p><input type="text" id="cid" value="${esc(f.id||'')}" style="width:100%">
  <p class="mu">비밀번호</p><input type="password" id="cpw" style="width:100%">
  <div class="hd" style="margin-top:10px"><button data-a="cup">☁ 올리기(저장)</button><button class="g" data-a="cdn">⬇ 불러오기</button>${f.key?'<button class="s r" data-a="cout">연동 끄기</button>':''}</div>
  <p class="mu" id="cm">${f.key?'✅ 연동 중이에요. 이 기기에서 바꾸면 자동으로 클라우드에 올라가고, 열 때 최신 기록을 가져와요.':'처음에는 한쪽 기기에서 “올리기”, 다른 기기에서 “불러오기”를 눌러요.'}</p></div></div>`}
+// 로그인(아이디+비밀번호). 저장된 기록이 있으면 불러오고, 없으면 새로 만들어 올림
+async function login(){
+ const id=$('#cid').value.trim(),pw=$('#cpw').value,keep=$('#ckeep').checked;
+ if(!id||!pw)return msg('아이디와 비밀번호를 입력해 주세요.');
+ try{const k=await hk(id,pw),u=DBURL+'/u/'+k+'.json',r=await fetch(u);if(!r.ok)throw 0;const d=await r.json();
+  if(d&&d.items)ask('로그인했어요! 이 기기의 기록을 클라우드 기록으로 바꿀까요? (이 기기에 있던 기록은 사라져요)',()=>{S=d;mig();theme();sset({id,key:k,auto:true},keep);save();render()});
+  else ask('이 아이디/비밀번호로 저장된 기록이 없어요. 새로 만들고 이 기기의 기록을 올릴까요? (이미 만들었는데 이 메시지가 뜨면 아이디나 비밀번호 오타예요)',async()=>{try{const w=await fetch(u,{method:'PUT',body:JSON.stringify(S)});if(!w.ok)throw 0;sset({id,key:k,auto:true},keep);ask('☁ 새로 만들고 올렸어요! 다른 기기에서 같은 아이디/비밀번호로 로그인하세요.')}catch(e){ask('저장에 실패했어요. 잠시 후 다시 시도해 주세요.')}})
+ }catch(e){msg('연결에 실패했어요. 인터넷을 확인하고 다시 시도해 주세요.')}
+}
+function cloudUI(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>☁ 기기 연동</b><button data-a="close">닫기</button></div>`+(f.key?
+ `<p>✅ <b>${esc(f.id)}</b> 로그인 중이에요.</p><p class="mu">이 기기에서 바꾼 내용은 자동으로 저장되고, 열 때 최신 기록을 가져와요. 로그아웃해도 이 기기의 기록은 남아요.</p><button class="r" data-a="cout">로그아웃</button>`
+ :`<p class="mu">같은 아이디·비밀번호로 로그인하면 폰과 컴퓨터의 기록이 같아져요. 로그인 안 해도 지금처럼 쓸 수 있어요.</p><p class="mu">⚠ 비밀번호를 잊으면 끝이에요 😅 복구할 수 없으니 꼭 기억해 두세요!</p>
+ <p class="mu">아이디</p><input type="text" id="cid" value="${esc(f.id||'')}" style="width:100%"><p class="mu">비밀번호</p><input type="password" id="cpw" style="width:100%">
+ <p><label><input type="checkbox" id="ckeep" checked> 로그인 유지</label></p><button data-a="login">로그인 / 새로 만들기</button><p class="mu" id="cm"></p>`)+`</div></div>`}
 // 색상 설정창
 function pal(){const t=S.theme;$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>🎨 색상 설정</b><button data-a="close">닫기</button></div>
  <p class="mu">추천 조합</p><div class="hd">${PRE.map((p,i)=>`<button class="s" data-a="pp" data-i="${i}" style="background:hsl(${p[1]} 70% 62%);border:3px solid ${p[3]?`hsl(${p[2]} 14% 16%)`:`hsl(${p[2]} 85% 92%)`}">${p[0]}</button>`).join('')}</div>
