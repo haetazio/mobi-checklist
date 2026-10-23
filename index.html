@@ -61,7 +61,7 @@ let S;const KEY='hw_v1';
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.items)S=def();
 // 카테고리(그룹) 목록: 예전 데이터는 새 형식으로 변환
-function mig(){if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}}mig();
+function mig(){S.chars=S.chars||{};SV.forEach(s=>{if(!Array.isArray(S.chars[s]))S.chars[s]=Object.values(S.chars[s]||{})});if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}}mig();
 const save=()=>{S.ts=Date.now();auto();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ask('저장 공간이 부족해요. 백업을 해주세요.')}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const open=new Set(),gv=new Set();let picC=null,editMode=false,cb=null;
@@ -93,8 +93,8 @@ function card(c){
 // 장비 데이터 정리(예전 형식이면 새 형식으로 변환)
 function gd(c){c.gear=c.gear||{};PARTS.forEach(([p,n])=>{let g=c.gear[p];
  if(Array.isArray(g))g={rune:(g.find(x=>x.r)||{}).r||'',gems:g.map(x=>({n:x.r||'',o:x.o.map(y=>[y.n,y.v].filter(Boolean).join(' '))}))};
- if(!g||!g.gems){g={rune:'',gems:[]};for(let i=0;i<n;i++)g.gems.push({n:'',o:['','','']})}
- c.gear[p]=g})}
+ if(!g){g={rune:'',gems:[]};for(let i=0;i<n;i++)g.gems.push({n:'',o:['','','']})}
+ g.gems=Array.isArray(g.gems)?g.gems:Object.values(g.gems||{});g.gems.forEach(m=>{m.o=Array.isArray(m.o)?m.o:Object.values(m.o||{})});c.gear[p]=g})}
 function gear(c){gd(c);
  return PARTS.map(([p])=>{const g=c.gear[p];
   return`<details data-p="${p}" ${open.has(c.id+p)?'open':''}><summary>${p} <small>${esc(g.rune)||'룬 미입력'}</small></summary><div class="gem"><input type="text" data-f="rune" data-p="${p}" value="${esc(g.rune)}" placeholder="${p} 룬 이름"></div>`+
