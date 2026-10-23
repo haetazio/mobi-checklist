@@ -268,7 +268,7 @@ function calcRes(){const c=cc(),du=c.nt?10:15,T=c.T,D=Math.max(1,c.D),end=T+D,rn
  const w=st.slice(T,end),cnt=s=>w.filter(x=>x==s).length,po=cnt(2),n1=cnt(1),n0=cnt(0);
  let safe='';
  if(c.mode=='e'){const RG=[];let a=-1;for(let s=0;s<=300;s++){const ok=s<300&&!simE({e:s,p:0,rn,du,end}).slice(T,end).includes(2);if(ok&&a<0)a=s;if(!ok&&a>=0){RG.push(a==s-1?a:a+'~'+(s-1));a=-1}}
-  safe=`<div class="nt">💡 오염 없이 가려면 캠파 침식 수치가 <b>${RG.length?RG.join(', '):'해당 없음'}</b> 이어야 해요.</div>`}
+  safe=`<div class="nt">💡 오염 없이 가려면 시작 침식 스택이 <b>${RG.length?RG.join(', '):'해당 없음'}</b> 이어야 해요.</div>`}
  return`<div class="vd ${po?'bad':'ok'}">${po?`⚠ 브익 중 오염 ${po}초 겹침`:'✅ 오염 없이 통과'}</div>`+
  `<div class="mu">브익 시작 시 침식 <b>${R>0?`오염 중 (남은 ${R}초)`:E+' / 300'}</b></div>`+
  `<div class="gz"><div class="gf" style="width:${R>0?100:E/3}%;${R>0?'background:#ff7a7a':''}"></div><i style="left:33.3%"></i></div>`+
@@ -280,8 +280,8 @@ function calcRes(){const c=cc(),du=c.nt?10:15,T=c.T,D=Math.max(1,c.D),end=T+D,rn
 function calcUI(){const c=cc(),sg=(k,v,l)=>`<button class="${c[k]==v?'on':''}" data-a="cset" data-k="${k}" data-v="${v}">${l}</button>`,
  f=(l,h)=>`<div class="fl"><span class="mu">${l}</span>${h}</div>`;
  $('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>🧮 침식·오염 계산기</b><button data-a="close">닫기</button></div><div class="cg">`+
- f('캠파 상태',`<div class="sg">${sg('mode','e','침식 수치')}${sg('mode','p','오염 중')}</div>`)+
- f(c.mode=='e'?'현재 침식 수치 (0~299)':'오염 시작 후 지난 시간(초)',`<input type="number" min="0" data-ck="${c.mode=='e'?'v':'el'}" value="${c.mode=='e'?c.v:c.el}">`)+
+ f('시작 상태',`<div class="sg">${sg('mode','e','침식 스택')}${sg('mode','p','오염 스택')}</div>`)+
+ f(c.mode=='e'?'침식 스택 (0~299)':'오염 스택 (오염 후 경과 초)',`<input type="number" min="0" data-ck="${c.mode=='e'?'v':'el'}" value="${c.mode=='e'?c.v:c.el}">`)+
  f('영원한 밤',`<div class="sg">${sg('nt',0,'OFF')}${sg('nt',1,'ON')}</div>`)+
  f('침식 룬 개수',`<div class="sg">${sg('rn',1,'1')}${sg('rn',2,'2')}${sg('rn',3,'3')}</div>`)+
  f('브익 시작 (입장 후 몇 초)',`<input type="number" min="0" data-ck="T" value="${c.T}">`)+
