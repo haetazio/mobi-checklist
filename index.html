@@ -33,9 +33,17 @@ details{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 
 .sl::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--ti)}.sl::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--ti)}.sum{margin-top:10px;font-size:12px;line-height:1.6}.sum b{color:var(--ti)}.sum div{border-top:1px dashed var(--line);padding:3px 0}
 #th{-webkit-appearance:none;appearance:none;width:130px;height:10px;border-radius:5px;background:linear-gradient(90deg,hsl(0 80% 70%),hsl(60 80% 70%),hsl(120 80% 70%),hsl(180 80% 70%),hsl(240 80% 70%),hsl(300 80% 70%),hsl(360 80% 70%))}
 #th::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--ti)}#th::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--ti)}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.fl{display:flex;flex-direction:column;gap:4px}.fl input{width:100%}
+.sg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.sg button{flex:1;border-radius:0;background:var(--in);color:var(--tx);padding:7px 4px;font-weight:600}.sg button.on{background:var(--ac);color:#fff}
+.vd{border-radius:10px;padding:8px 12px;font-weight:700;margin:14px 0 8px}.vd.ok{background:rgba(16,163,127,.16);color:var(--ok)}.vd.bad{background:rgba(224,80,110,.16);color:#e0506e}
+.gz{position:relative;height:14px;border-radius:7px;background:var(--in);border:1px solid var(--line);overflow:hidden;margin-top:4px}.gf{height:100%;background:var(--ac)}.gz i{position:absolute;top:0;bottom:0;width:2px;background:var(--tx);opacity:.4}
+.ch{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:2px 10px;margin:2px 4px 2px 0;font-size:12px}
+.tl{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:4px}.tl div{border-radius:8px;text-align:center;padding:4px 0;font-size:15px;line-height:1.15}.tl small{display:block;font-size:10px;opacity:.75}
+.t0{background:var(--in);border:1px solid var(--line)}.t1{background:var(--ac);color:#fff}.t2{background:#2b1b3d;color:#ff9fb8;border:1px solid #ff9fb8}
+.nt{margin-top:10px;padding:8px 10px;border-radius:10px;background:var(--in);border:1px dashed var(--line);font-size:13px}
 </style></head><body><div class="w">
 <div class="top"><h1>🎮 캐릭터 숙제 & 장비 관리</h1><div class="hd">
-<button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<button class="s g" data-a="pal">색상 설정</button></span><button data-a="cloud">☁ 기기 연동</button><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
+<button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<button class="s g" data-a="pal">색상 설정</button></span><button data-a="calc">🧮 침식 계산기</button><button data-a="cloud">☁ 기기 연동</button><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
 <div id="cd" class="cd"></div><div id="app"></div></div><div id="mo"></div>
 <input type="file" id="fi" accept=".json" hidden><input type="file" id="fp" accept="image/*" hidden>
 <script>
@@ -89,7 +97,7 @@ function gd(c){c.gear=c.gear||{};PARTS.forEach(([p,n])=>{let g=c.gear[p];
 function gear(c){gd(c);
  return PARTS.map(([p])=>{const g=c.gear[p];
   return`<details data-p="${p}" ${open.has(c.id+p)?'open':''}><summary>${p} <small>${esc(g.rune)||'룬 미입력'}</small></summary><div class="gem"><input type="text" data-f="rune" data-p="${p}" value="${esc(g.rune)}" placeholder="${p} 룬 이름"></div>`+
-  g.gems.map((m,gi)=>`<div class="gem"><input type="text" data-f="gn" data-p="${p}" data-g="${gi}" value="${esc(m.n)}" placeholder="보석 ${gi+1} 이름">`+
+  g.gems.map((m,gi)=>`<div class="gem"><div class="hd" style="margin-bottom:3px"><button class="s g" data-a="gcp" data-p="${p}" data-g="${gi}">💎 보석 복사</button><button class="s g" data-a="gps" data-p="${p}" data-g="${gi}">📋 붙여넣기</button></div><input type="text" data-f="gn" data-p="${p}" data-g="${gi}" value="${esc(m.n)}" placeholder="보석 ${gi+1} 이름">`+
   m.o.map((o,oi)=>`<input type="text" data-f="go" data-p="${p}" data-g="${gi}" data-o="${oi}" value="${esc(o)}" placeholder="옵션 ${oi+1}">`).join('')+`</div>`).join('')+`</details>`}).join('')+`<div class="sum">${sum(c)}</div>`;
 }
 // 룬/보석 한눈에 보기
@@ -105,17 +113,6 @@ function hw(c){
  return`<div class="it"><span class="l">${esc(i.n)}</span><span class="bd">${i.c=='d'?'매일':'주간'}</span>`+
  Array.from({length:i.k},(_,x)=>`<input type="checkbox" data-a="ck" data-i="${i.id}" data-x="${x}" ${x<n?'checked':''}>`).join('')+`</div>`}).join('')+(editMode?`<button class="s g" data-a="addi" data-g="${gi}">+ 항목 추가</button>`:'')}).join('')+(editMode?'<button class="s" data-a="addg" style="margin-top:10px">+ 카테고리 추가</button>':'');
 }
-function gearOld(c){
- c.gear=c.gear||{};
- return PARTS.map(([p,n])=>{
-  const gs=c.gear[p]=c.gear[p]||Array.from({length:n},()=>({r:'',o:[{n:'',v:''},{n:'',v:''},{n:'',v:''}]}));
-  const sm=gs.map(g=>g.r).filter(Boolean).join(', ');
-  return`<details data-p="${p}" ${open.has(c.id+p)?'open':''}><summary>${p} <small>${esc(sm)||'미입력'}</small></summary>`+
-  gs.map((g,gi)=>`<div class="gem"><input type="text" data-f="rune" data-p="${p}" data-g="${gi}" value="${esc(g.r)}" placeholder="룬 이름 (보석 ${gi+1})">`+
-  g.o.map((o,oi)=>`<div class="o"><input type="text" data-f="on" data-p="${p}" data-g="${gi}" data-o="${oi}" value="${esc(o.n)}" placeholder="세공 옵션 ${oi+1}">
-  <input type="text" data-f="ov" data-p="${p}" data-g="${gi}" data-o="${oi}" value="${esc(o.v)}" placeholder="수치"></div>`).join('')+`</div>`).join('')+`</details>`}).join('');
-}
-
 // ---------- 초기화 ----------
 function reset(list,m,label){
  ask(label+' '+(m=='d'?'매일 항목만':'모든 항목(주간 포함)')+' 해제할까요?',()=>{
@@ -146,6 +143,10 @@ document.addEventListener('click',e=>{
  else if(a=='rs')reset(S.chars[S.cur],b.dataset.m,'현재 서버 전체 캐릭터의');
  else if(a=='rc')reset([c],b.dataset.m,`“${c.name}”의`);
  else if(a=='pic'){picC=c;$('#fp').click()}
+ else if(a=='gcp'){S.gclip=JSON.parse(JSON.stringify(c.gear[b.dataset.p].gems[b.dataset.g]));save();toast('보석 복사됨 ✓')}
+ else if(a=='gps'){if(!S.gclip)return toast('먼저 복사해 주세요');c.gear[b.dataset.p].gems[b.dataset.g]=JSON.parse(JSON.stringify(S.gclip));save();render();toast('붙여넣었어요 ✓')}
+ else if(a=='calc')calcUI();
+ else if(a=='cset'){const c=cc();c[b.dataset.k]=b.dataset.k=='mode'?b.dataset.v:+b.dataset.v;save();calcUI()}
  else if(a=='cloud')cloudUI();
  else if(a=='login')login();
  
@@ -210,23 +211,6 @@ let at=null;
 function auto(){const f=sget();if(!f.key||!f.url||!f.auto)return;clearTimeout(at);at=setTimeout(()=>{fetch(f.url+'/u/'+f.key+'.json',{method:'PUT',body:JSON.stringify(S)}).catch(()=>{})},2500)}
 // 열 때/다시 보일 때 클라우드가 더 최신이면 가져오기
 async function pull(){const f=sget();if(!f.key||!f.auto)return;try{const r=await fetch(f.url+'/u/'+f.key+'.json');const d=r.ok&&await r.json();if(d&&d.items&&(d.ts||0)>(S.ts||0)){S=d;mig();theme();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render()}}catch(e){}}
-async function cloudOld(mode){
- const url=$('#curl').value.trim().replace(/\/+$/,''),id=$('#cid').value.trim(),pw=$('#cpw').value;
- if(!url||!id||!pw)return msg('주소, 아이디, 비밀번호를 모두 입력해 주세요.');
- try{const k=await hk(id,pw),u=url+'/u/'+k+'.json';
-  if(mode=='up'){const r=await fetch(u,{method:'PUT',body:JSON.stringify(S)});if(!r.ok)throw 0;sset({url,id,key:k,auto:true});cloudUI();msg('☁ 올렸어요! 다른 기기에서 같은 아이디/비밀번호로 “불러오기”를 누르세요.')}
-  else{const r=await fetch(u);if(!r.ok)throw 0;const d=await r.json();
-   if(!d||!d.items)return msg('이 아이디/비밀번호로 저장된 기록이 없어요. 아이디·비밀번호를 확인하거나 다른 기기에서 먼저 “올리기”를 해 주세요.');
-   sset({url,id});ask('이 기기의 기록을 클라우드 기록으로 덮어쓸까요?',()=>{S=d;mig();theme();sset({key:k,auto:true});save();render()})}
- }catch(e){msg('연결에 실패했어요. 주소가 맞는지, Rules를 Publish 했는지 확인해 주세요.')}
-}
-function cloudUIOld(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>☁ 기기 연동</b><button data-a="close">닫기</button></div>
- <p class="mu">같은 아이디·비밀번호를 쓰면 폰과 컴퓨터의 기록이 같아져요. 비밀번호를 잊으면 복구할 수 없어요.</p>
- <p class="mu">데이터베이스 주소 (Firebase)</p><input type="text" id="curl" value="${esc(f.url||DBURL)}" placeholder="https://....firebasedatabase.app" style="width:100%">
- <p class="mu">아이디</p><input type="text" id="cid" value="${esc(f.id||'')}" style="width:100%">
- <p class="mu">비밀번호</p><input type="password" id="cpw" style="width:100%">
- <div class="hd" style="margin-top:10px"><button data-a="cup">☁ 올리기(저장)</button><button class="g" data-a="cdn">⬇ 불러오기</button>${f.key?'<button class="s r" data-a="cout">연동 끄기</button>':''}</div>
- <p class="mu" id="cm">${f.key?'✅ 연동 중이에요. 이 기기에서 바꾸면 자동으로 클라우드에 올라가고, 열 때 최신 기록을 가져와요.':'처음에는 한쪽 기기에서 “올리기”, 다른 기기에서 “불러오기”를 눌러요.'}</p></div></div>`}
 // 로그인(아이디+비밀번호). 저장된 기록이 있으면 불러오고, 없으면 새로 만들어 올림
 async function login(){
  const id=$('#cid').value.trim(),pw=$('#cpw').value,keep=$('#ckeep').checked;
@@ -241,17 +225,51 @@ function cloudUI(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div 
  :`<p class="mu">같은 아이디·비밀번호로 로그인하면 폰과 컴퓨터의 기록이 같아져요. 로그인 안 해도 지금처럼 쓸 수 있어요.</p><p class="mu">⚠ 비밀번호를 잊으면 끝이에요 😅 복구할 수 없으니 꼭 기억해 두세요!</p>
  <p class="mu">아이디</p><input type="text" id="cid" value="${esc(f.id||'')}" style="width:100%"><p class="mu">비밀번호</p><input type="password" id="cpw" style="width:100%">
  <p><label><input type="checkbox" id="ckeep" checked> 로그인 유지</label></p><button data-a="login">로그인 / 새로 만들기</button><p class="mu" id="cm"></p>`)+`</div></div>`}
+// ---------- 침식 계산기 ----------
+const AB=[['허상의 정박지',15],['광기의 동굴',35],['흙어진 물길',40],['기타',0]];
+function cc(){const o=S.calc||{};if(o.V!=3){o.V=3}return S.calc=Object.assign({mode:'e',v:0,el:0,nt:0,rn:1,ab:0,T:15,D:10},o)}
+// 1초마다: 오염 중이면 시간만 줄고(끝나면 침식 0), 아니면 침식 +5×룬 개수, 300이 되면 오염 시작
+function simE(o){let E=o.e,R=o.p;const st=[];
+ for(let t=0;t<=o.end;t++){st.push(R>0?2:(E>=100?1:0));
+  if(R>0){R--;if(R<=0)E=0}else{E+=5*o.rn;if(E>=300){E=300;R=o.du}}}
+ return st}
+// 알림 메시지(잠깐 뜨였다 사라짐)
+function toast(t){let e=$('#ts');if(!e){e=document.createElement('div');e.id='ts';e.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ac);color:#fff;padding:8px 14px;border-radius:20px;z-index:99;font-weight:700';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',1800)}
+// 결과 화면: 브익 구간을 1초 칸으로 보여줌
+function calcRes(){const c=cc(),du=c.nt?10:15,T=c.T,D=Math.max(1,c.D),end=T+D,rn=c.rn;
+ const p0=c.mode=='p'?Math.max(0,du-c.el):0,e0=c.mode=='e'?Math.min(299,c.v):0;
+ const st=simE({e:e0,p:p0,rn,du,end}),tk=(E,R)=>{if(R>0){R--;if(R<=0)E=0}else{E+=5*rn;if(E>=300){E=300;R=du}}return[E,R]};
+ let E=e0,R=p0;for(let t=0;t<T;t++){[E,R]=tk(E,R)}
+ let E2=E,R2=R;for(let t=T;t<end;t++){[E2,R2]=tk(E2,R2)}
+ const w=st.slice(T,end),cnt=s=>w.filter(x=>x==s).length,po=cnt(2),n1=cnt(1),n0=cnt(0);
+ let safe='';
+ if(c.mode=='e'){const RG=[];let a=-1;for(let s=0;s<=300;s++){const ok=s<300&&!simE({e:s,p:0,rn,du,end}).slice(T,end).includes(2);if(ok&&a<0)a=s;if(!ok&&a>=0){RG.push(a==s-1?a:a+'~'+(s-1));a=-1}}
+  safe=`<div class="nt">💡 오염 없이 가려면 캠파 침식 수치가 <b>${RG.length?RG.join(', '):'해당 없음'}</b> 이어야 해요.</div>`}
+ return`<div class="vd ${po?'bad':'ok'}">${po?`⚠ 브익 중 오염 ${po}초 겹침`:'✅ 오염 없이 통과'}</div>`+
+ `<div class="mu">브익 시작 시 침식 <b>${R>0?`오염 중 (남은 ${R}초)`:E+' / 300'}</b></div>`+
+ `<div class="gz"><div class="gf" style="width:${R>0?100:E/3}%;${R>0?'background:#ff7a7a':''}"></div><i style="left:33.3%"></i></div>`+
+ `<div class="mu" style="display:flex;justify-content:space-between"><span>0</span><span>강화 100</span><span>오염 300</span></div>`+
+ `<div style="margin:10px 0 4px"><span class="ch">일반 ${n0}초</span><span class="ch">⚡ 강화 ${n1}초</span><span class="ch">☠ 오염 ${po}초</span></div>`+
+ `<div class="tl">${w.map((s,i)=>`<div class="t${s}" title="${i}초">${['·','⚡','☠'][s]}<small>${i}</small></div>`).join('')}</div>`+
+ `<div class="mu" style="margin-top:4px">칸 하나가 1초, 첫 칸이 브익 시작이에요. (브익 ${D}초 · 종료 시 ${R2>0?'오염 중':'침식 '+E2})</div>`+safe+
+ `<p class="mu">침식 룬 1개당 초당 +5, 300이 되면 오염(영밤 OFF 15초 / ON 10초, 그동안 모든 효과 없음), 끝나면 0부터 다시 쌓여요. 100 이상이면 강화(효과 2배).</p>`}
+function calcUI(){const c=cc(),sg=(k,v,l)=>`<button class="${c[k]==v?'on':''}" data-a="cset" data-k="${k}" data-v="${v}">${l}</button>`,
+ f=(l,h)=>`<div class="fl"><span class="mu">${l}</span>${h}</div>`;
+ $('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>🧮 침식·오염 계산기</b><button data-a="close">닫기</button></div><div class="cg">`+
+ f('캠파 상태',`<div class="sg">${sg('mode','e','침식 수치')}${sg('mode','p','오염 중')}</div>`)+
+ f(c.mode=='e'?'현재 침식 수치 (0~299)':'오염 시작 후 지난 시간(초)',`<input type="number" min="0" data-ck="${c.mode=='e'?'v':'el'}" value="${c.mode=='e'?c.v:c.el}">`)+
+ f('영원한 밤',`<div class="sg">${sg('nt',0,'OFF')}${sg('nt',1,'ON')}</div>`)+
+ f('침식 룬 개수',`<div class="sg">${sg('rn',1,'1')}${sg('rn',2,'2')}${sg('rn',3,'3')}</div>`)+
+ f('브익 시작 (입장 후 몇 초)',`<input type="number" min="0" data-ck="T" value="${c.T}">`)+
+ f('브익 지속 (초)',`<input type="number" min="1" data-ck="D" value="${c.D}">`)+
+ `</div><div id="cres">${calcRes()}</div></div></div>`}
+document.addEventListener('input',e=>{const k=e.target.dataset.ck;if(!k)return;cc()[k]=Math.max(0,+e.target.value||0);save();$('#cres').innerHTML=calcRes()});
 // 색상 설정창
 function pal(){const t=S.theme;$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>🎨 색상 설정</b><button data-a="close">닫기</button></div>
  <p class="mu">추천 조합</p><div class="hd">${PRE.map((p,i)=>`<button class="s" data-a="pp" data-i="${i}" style="background:hsl(${p[1]} 70% 62%);border:3px solid ${p[3]?`hsl(${p[2]} 14% 16%)`:`hsl(${p[2]} 85% 92%)`}">${p[0]}</button>`).join('')}</div>
  <p class="mu">포인트 색 (버튼·제목)</p><input type="range" class="sl" id="sh" min="0" max="360" value="${t.h}">
  <p class="mu">배경 색</p><input type="range" class="sl" id="sb" min="0" max="360" value="${t.b}">
  <p><button class="g" data-a="dk" id="dk">${t.d?'☀ 밝게':'☾ 어둡게'}</button></p></div></div>`}
-function themeOld(){const t=S.theme||(S.theme={h:335,d:false}),h=t.h,d=t.d,r=document.documentElement.style;
- const P=d?{bg:`hsl(${h} 25% 9%)`,card:`hsl(${h} 22% 14%)`,line:`hsl(${h} 18% 26%)`,tx:`hsl(${h} 25% 93%)`,mu:`hsl(${h} 12% 65%)`,ac:`hsl(${h} 55% 55%)`,g:`hsl(${h} 12% 38%)`,in:`hsl(${h} 25% 8%)`,ti:`hsl(${h} 80% 76%)`}
- :{bg:`hsl(${h} 90% 96%)`,card:`hsl(${h} 100% 99%)`,line:`hsl(${h} 60% 87%)`,tx:`hsl(${h} 30% 20%)`,mu:`hsl(${h} 15% 45%)`,ac:`hsl(${h} 70% 62%)`,g:`hsl(${h} 18% 60%)`,in:'#fff',ti:`hsl(${h} 60% 50%)`};
- for(const k in P)r.setProperty('--'+k,P[k]);r.colorScheme=d?'dark':'light';
- $('#th').value=h;$('#dk').textContent=d?'☀ 밝게':'☾ 어둡게'}
 document.addEventListener('input',e=>{const t=e.target;if(t.id=='sh'||t.id=='sb'){S.theme[t.id=='sh'?'h':'b']=+t.value;theme();save()}});
 // 룬/보석 한눈에 보기 실시간 갱신
 document.addEventListener('input',e=>{const t=e.target,cd=t.closest('[data-c]'),s=cd&&cd.querySelector('.sum');
