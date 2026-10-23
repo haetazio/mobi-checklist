@@ -28,12 +28,14 @@ details{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 
 .o{display:grid;grid-template-columns:2fr 1fr;gap:4px}
 .mo{position:fixed;inset:0;background:#000a;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}
 .mo>div{background:var(--card);border-radius:12px;padding:14px;width:min(560px,100%)}
-.mu{color:var(--mu);font-size:12px}.sum{margin-top:10px;font-size:12px;line-height:1.6}.sum b{color:var(--ti)}.sum div{border-top:1px dashed var(--line);padding:3px 0}
+.mu{color:var(--mu);font-size:12px}.card{box-shadow:0 2px 8px rgba(0,0,0,.12)}input[type=password]{background:var(--in);color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font:inherit}
+.sl{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(0 80% 70%),hsl(60 80% 70%),hsl(120 80% 70%),hsl(180 80% 70%),hsl(240 80% 70%),hsl(300 80% 70%),hsl(360 80% 70%))}
+.sl::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--ti)}.sl::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--ti)}.sum{margin-top:10px;font-size:12px;line-height:1.6}.sum b{color:var(--ti)}.sum div{border-top:1px dashed var(--line);padding:3px 0}
 #th{-webkit-appearance:none;appearance:none;width:130px;height:10px;border-radius:5px;background:linear-gradient(90deg,hsl(0 80% 70%),hsl(60 80% 70%),hsl(120 80% 70%),hsl(180 80% 70%),hsl(240 80% 70%),hsl(300 80% 70%),hsl(360 80% 70%))}
 #th::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--ti)}#th::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--ti)}
 </style></head><body><div class="w">
 <div class="top"><h1>🎮 캐릭터 숙제 & 장비 관리</h1><div class="hd">
-<button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<input type="range" id="th" min="0" max="360" title="색상 조절"><button class="s g" data-a="dk" id="dk">☾ 어둡게</button></span><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
+<button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<button class="s g" data-a="pal">색상 설정</button></span><button data-a="cloud">☁ 기기 연동</button><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
 <div id="app"></div></div><div id="mo"></div>
 <input type="file" id="fi" accept=".json" hidden><input type="file" id="fp" accept="image/*" hidden>
 <script>
@@ -51,7 +53,7 @@ try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.items)S=def();
 // 카테고리(그룹) 목록: 예전 데이터는 새 형식으로 변환
 function mig(){if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}}mig();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ask('저장 공간이 부족해요. 백업을 해주세요.')}};
+const save=()=>{S.ts=Date.now();auto();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ask('저장 공간이 부족해요. 백업을 해주세요.')}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const open=new Set(),gv=new Set();let picC=null,editMode=false,cb=null;
 // 확인창(브라우저 기본 팝업은 이 페이지에서 막혀서 직접 만든 팝업 사용)
@@ -144,6 +146,12 @@ document.addEventListener('click',e=>{
  else if(a=='rs')reset(S.chars[S.cur],b.dataset.m,'현재 서버 전체 캐릭터의');
  else if(a=='rc')reset([c],b.dataset.m,`“${c.name}”의`);
  else if(a=='pic'){picC=c;$('#fp').click()}
+ else if(a=='cloud')cloudUI();
+ else if(a=='cup')cloud('up');
+ else if(a=='cdn')cloud('down');
+ else if(a=='cout'){sset({key:'',auto:false});cloudUI()}
+ else if(a=='pal')pal();
+ else if(a=='pp'){const p=PRE[+b.dataset.i];Object.assign(S.theme,{h:p[1],b:p[2],d:!!p[3]});theme();save();pal()}
  else if(a=='dk'){S.theme.d=!S.theme.d;theme();save()}
  else if(a=='delpic'){delete c.img;save();render()}
  else if(a=='edit'){editMode=!editMode;$('#eb').textContent=editMode?'✅ 편집 끝':'✏️ 항목 편집';render()}
@@ -183,14 +191,56 @@ $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRea
  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.chars)throw 0;ask('현재 기록을 백업 파일로 덮어쓸까요?',()=>{S=d;mig();theme();save();render()});}catch(x){ask('올바른 백업 파일이 아니에요.')}};
  r.readAsText(f);e.target.value=''};
 // 색상 테마: 색상 슬라이더(0~360) + 밝게/어둡게
-function theme(){const t=S.theme||(S.theme={h:335,d:false}),h=t.h,d=t.d,r=document.documentElement.style;
+// 색상 조합(이름, 포인트색, 배경색, 어둡게여부)
+const PRE=[['연분홍',340,340,0],['라벤더',265,270,0],['민트',165,160,0],['하늘',205,205,0],['살구',22,30,0],['레몬',46,50,0],['밤분홍',335,330,1],['밤보라',270,260,1],['심해',195,215,1],['숲',150,150,1]];
+function theme(){const t=S.theme||(S.theme={h:335,d:false});if(t.b==null)t.b=t.h;const h=t.h,b=t.b,d=t.d,r=document.documentElement.style;
+ const P=d?{bg:`hsl(${b} 14% 8%)`,card:`hsl(${b} 12% 13%)`,line:`hsl(${b} 10% 24%)`,tx:`hsl(${b} 15% 92%)`,mu:`hsl(${b} 8% 62%)`,ac:`hsl(${h} 70% 62%)`,g:`hsl(${b} 8% 34%)`,in:`hsl(${b} 14% 7%)`,ti:`hsl(${h} 85% 72%)`}
+ :{bg:`hsl(${b} 85% 96%)`,card:`hsl(${b} 60% 99%)`,line:`hsl(${b} 45% 88%)`,tx:`hsl(${b} 25% 18%)`,mu:`hsl(${b} 12% 42%)`,ac:`hsl(${h} 70% 62%)`,g:`hsl(${b} 14% 58%)`,in:'#fff',ti:`hsl(${h} 60% 48%)`};
+ for(const k in P)r.setProperty('--'+k,P[k]);r.colorScheme=d?'dark':'light';
+ const k=document.getElementById('dk');if(k)k.textContent=d?'☀ 밝게':'☾ 어둡게'}
+// ---------- 기기 연동(Firebase Realtime Database REST) ----------
+const DBURL=''; // 여기에 데이터베이스 주소를 적어두면 매번 입력 안 해도 됨(선택)
+const SK='hw_sync';
+function sget(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}}
+function sset(o){try{localStorage.setItem(SK,JSON.stringify(Object.assign(sget(),o)))}catch(e){}}
+// 아이디+비밀번호를 해시로 바꿔 저장 위치 이름으로 사용(비밀번호 자체는 저장 안 함)
+async function hk(id,pw){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('hw|'+id.toLowerCase()+'|'+pw));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function msg(t){const e=$('#cm');if(e)e.textContent=t}
+let at=null;
+function auto(){const f=sget();if(!f.key||!f.url||!f.auto)return;clearTimeout(at);at=setTimeout(()=>{fetch(f.url+'/u/'+f.key+'.json',{method:'PUT',body:JSON.stringify(S)}).catch(()=>{})},2500)}
+// 열 때/다시 보일 때 클라우드가 더 최신이면 가져오기
+async function pull(){const f=sget();if(!f.key||!f.auto)return;try{const r=await fetch(f.url+'/u/'+f.key+'.json');const d=r.ok&&await r.json();if(d&&d.items&&(d.ts||0)>(S.ts||0)){S=d;mig();theme();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render()}}catch(e){}}
+async function cloud(mode){
+ const url=$('#curl').value.trim().replace(/\/+$/,''),id=$('#cid').value.trim(),pw=$('#cpw').value;
+ if(!url||!id||!pw)return msg('주소, 아이디, 비밀번호를 모두 입력해 주세요.');
+ try{const k=await hk(id,pw),u=url+'/u/'+k+'.json';
+  if(mode=='up'){const r=await fetch(u,{method:'PUT',body:JSON.stringify(S)});if(!r.ok)throw 0;sset({url,id,key:k,auto:true});cloudUI();msg('☁ 올렸어요! 다른 기기에서 같은 아이디/비밀번호로 “불러오기”를 누르세요.')}
+  else{const r=await fetch(u);if(!r.ok)throw 0;const d=await r.json();
+   if(!d||!d.items)return msg('이 아이디/비밀번호로 저장된 기록이 없어요. 아이디·비밀번호를 확인하거나 다른 기기에서 먼저 “올리기”를 해 주세요.');
+   sset({url,id});ask('이 기기의 기록을 클라우드 기록으로 덮어쓸까요?',()=>{S=d;mig();theme();sset({key:k,auto:true});save();render()})}
+ }catch(e){msg('연결에 실패했어요. 주소가 맞는지, Rules를 Publish 했는지 확인해 주세요.')}
+}
+function cloudUI(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>☁ 기기 연동</b><button data-a="close">닫기</button></div>
+ <p class="mu">같은 아이디·비밀번호를 쓰면 폰과 컴퓨터의 기록이 같아져요. 비밀번호를 잊으면 복구할 수 없어요.</p>
+ <p class="mu">데이터베이스 주소 (Firebase)</p><input type="text" id="curl" value="${esc(f.url||DBURL)}" placeholder="https://....firebasedatabase.app" style="width:100%">
+ <p class="mu">아이디</p><input type="text" id="cid" value="${esc(f.id||'')}" style="width:100%">
+ <p class="mu">비밀번호</p><input type="password" id="cpw" style="width:100%">
+ <div class="hd" style="margin-top:10px"><button data-a="cup">☁ 올리기(저장)</button><button class="g" data-a="cdn">⬇ 불러오기</button>${f.key?'<button class="s r" data-a="cout">연동 끄기</button>':''}</div>
+ <p class="mu" id="cm">${f.key?'✅ 연동 중이에요. 이 기기에서 바꾸면 자동으로 클라우드에 올라가고, 열 때 최신 기록을 가져와요.':'처음에는 한쪽 기기에서 “올리기”, 다른 기기에서 “불러오기”를 눌러요.'}</p></div></div>`}
+// 색상 설정창
+function pal(){const t=S.theme;$('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>🎨 색상 설정</b><button data-a="close">닫기</button></div>
+ <p class="mu">추천 조합</p><div class="hd">${PRE.map((p,i)=>`<button class="s" data-a="pp" data-i="${i}" style="background:hsl(${p[1]} 70% 62%);border:3px solid ${p[3]?`hsl(${p[2]} 14% 16%)`:`hsl(${p[2]} 85% 92%)`}">${p[0]}</button>`).join('')}</div>
+ <p class="mu">포인트 색 (버튼·제목)</p><input type="range" class="sl" id="sh" min="0" max="360" value="${t.h}">
+ <p class="mu">배경 색</p><input type="range" class="sl" id="sb" min="0" max="360" value="${t.b}">
+ <p><button class="g" data-a="dk" id="dk">${t.d?'☀ 밝게':'☾ 어둡게'}</button></p></div></div>`}
+function themeOld(){const t=S.theme||(S.theme={h:335,d:false}),h=t.h,d=t.d,r=document.documentElement.style;
  const P=d?{bg:`hsl(${h} 25% 9%)`,card:`hsl(${h} 22% 14%)`,line:`hsl(${h} 18% 26%)`,tx:`hsl(${h} 25% 93%)`,mu:`hsl(${h} 12% 65%)`,ac:`hsl(${h} 55% 55%)`,g:`hsl(${h} 12% 38%)`,in:`hsl(${h} 25% 8%)`,ti:`hsl(${h} 80% 76%)`}
  :{bg:`hsl(${h} 90% 96%)`,card:`hsl(${h} 100% 99%)`,line:`hsl(${h} 60% 87%)`,tx:`hsl(${h} 30% 20%)`,mu:`hsl(${h} 15% 45%)`,ac:`hsl(${h} 70% 62%)`,g:`hsl(${h} 18% 60%)`,in:'#fff',ti:`hsl(${h} 60% 50%)`};
  for(const k in P)r.setProperty('--'+k,P[k]);r.colorScheme=d?'dark':'light';
  $('#th').value=h;$('#dk').textContent=d?'☀ 밝게':'☾ 어둡게'}
-$('#th').oninput=e=>{S.theme.h=+e.target.value;theme();save()};
+document.addEventListener('input',e=>{const t=e.target;if(t.id=='sh'||t.id=='sb'){S.theme[t.id=='sh'?'h':'b']=+t.value;theme();save()}});
 // 룬/보석 한눈에 보기 실시간 갱신
 document.addEventListener('input',e=>{const t=e.target,cd=t.closest('[data-c]'),s=cd&&cd.querySelector('.sum');
  if(s&&/^(rune|gn|go)$/.test(t.dataset.f))s.innerHTML=sum(S.chars[S.cur].find(x=>x.id==cd.dataset.c))});
-theme();render();
+theme();render();pull();document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
 </script></body></html>
