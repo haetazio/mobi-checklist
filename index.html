@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -41,10 +40,11 @@ details{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 
 .ch{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:2px 10px;margin:2px 4px 2px 0;font-size:12px}
 .tl{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:4px}.tl div{border-radius:8px;text-align:center;padding:4px 0;font-size:15px;line-height:1.15}.tl small{display:block;font-size:10px;opacity:.75}
 .t0{background:var(--in);border:1px solid var(--line)}.t1{background:var(--ac);color:#fff}.t2{background:#2b1b3d;color:#ff9fb8;border:1px solid #ff9fb8}
+button.bl{background:var(--bl)}button.gr{background:var(--gr);color:var(--grt)}input[type=range]:not(.sl){accent-color:var(--ac);width:100%}
 .nt{margin-top:10px;padding:8px 10px;border-radius:10px;background:var(--in);border:1px dashed var(--line);font-size:13px}
 </style></head><body><div class="w">
 <div class="top"><h1>🎮 캐릭터 숙제 & 장비 관리</h1><div class="hd">
-<button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<button class="s g" data-a="pal">색상 설정</button></span><button data-a="calc">🧮 침식 계산기</button><button data-a="cloud">☁ 기기 연동</button><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
+<button data-a="edit" id="eb">✏️ 항목 편집</button><span class="hd">🎨<button class="s g" data-a="pal">색상 설정</button></span><button class="gr" data-a="sum">📊 요약</button><button class="bl" data-a="calc">🧮 침식 계산기</button><button data-a="cloud">☁ 기기 연동</button><button data-a="exp">💾 백업(내보내기)</button><button data-a="imp">📂 복원(불러오기)</button></div></div>
 <div id="cd" class="cd"></div><div id="app"></div></div><div id="mo"></div>
 <input type="file" id="fi" accept=".json" hidden><input type="file" id="fp" accept="image/*" hidden>
 <script>
@@ -74,7 +74,7 @@ const done=c=>{let d=0,t=0;S.items.forEach(i=>{t+=i.k;d+=Math.min(i.k,c.ck?.[i.i
 function render(){
  const cs=S.chars[S.cur]||[];
  $('#app').innerHTML=`<div class="tabs">${SV.map(s=>`<button data-a="sv" data-v="${s}" class="${s==S.cur?'on':''}">${s} (${(S.chars[s]||[]).length})</button>`).join('')}</div>
- <div class="bar"><b>현재 서버: ${S.cur}</b><div class="hd"><button data-a="addc">+ 캐릭터 추가</button>
+ <div class="bar"><b>현재 서버: ${S.cur}</b><div class="hd"><button class="g" data-a="ord">↕ 순서 바꾸기</button><button data-a="addc">+ 캐릭터 추가</button>
  <button class="g" data-a="rs" data-m="d">서버 매일 초기화</button><button class="g" data-a="rs" data-m="w">서버 전체 초기화(주간 포함)</button></div></div>
  ${editMode?'<p class="mu">✏️ 항목 편집 중이에요. 이름 수정, 매일/주간 선택, 체크 칸 수, ⧉ 복제, ✕ 삭제, 카테고리 이름·순서(▲▼) 변경, “+ 항목 추가”를 할 수 있어요(모든 캐릭터에 공통 적용). 끝나면 위의 “편집 끝”을 눌러주세요.</p>':''}${cs.length?'':'<p class="mu">아직 캐릭터가 없어요. “+ 캐릭터 추가”를 눌러보세요.</p>'}
  <div class="grid">${cs.map(card).join('')}</div>`;
@@ -137,6 +137,10 @@ document.addEventListener('click',e=>{
  const a=b.dataset.a,cd=b.closest('[data-c]'),c=cd&&S.chars[S.cur].find(x=>x.id==cd.dataset.c);
  if(a=='sv'){S.cur=b.dataset.v;save();render()}
  else if(a=='addc'){S.chars[S.cur].push({id:uid(),name:'새 캐릭터',ck:{}});save();render()}
+ else if(a=='ord')ordUI();
+ else if(a=='ou'||a=='od'){const L=S.chars[S.cur],x=+b.dataset.x,y=x+(a=='ou'?-1:1);if(y>=0&&y<L.length){[L[x],L[y]]=[L[y],L[x]];save();ordUI()}}
+ else if(a=='sum')sumUI();
+ else if(a=='gosv'){S.cur=b.dataset.v;save();$('#mo').innerHTML='';render()}
  else if(a=='dupc'){const n=JSON.parse(JSON.stringify(c));n.id=uid();n.name=c.name+' 복사';n.ck={};const L=S.chars[S.cur];L.splice(L.indexOf(c)+1,0,n);save();render()}
  else if(a=='delc')ask(`“${c.name}” 캐릭터를 삭제할까요?`,()=>{S.chars[S.cur]=S.chars[S.cur].filter(x=>x!=c);save();render()});
  else if(a=='gv'){gv.has(c.id)?gv.delete(c.id):gv.add(c.id);render()}
@@ -202,7 +206,10 @@ const PRE=[['연분홍',340,340,0],['라벤더',265,270,0],['민트',165,160,0],
 function theme(){const t=S.theme||(S.theme={h:335,d:false});if(t.b==null)t.b=t.h;const h=t.h,b=t.b,d=t.d,r=document.documentElement.style;
  const P=d?{bg:`hsl(${b} 14% 8%)`,card:`hsl(${b} 12% 13%)`,line:`hsl(${b} 10% 24%)`,tx:`hsl(${b} 15% 92%)`,mu:`hsl(${b} 8% 62%)`,ac:`hsl(${h} 70% 62%)`,g:`hsl(${b} 8% 34%)`,in:`hsl(${b} 14% 7%)`,ti:`hsl(${h} 85% 72%)`}
  :{bg:`hsl(${b} 85% 96%)`,card:`hsl(${b} 60% 99%)`,line:`hsl(${b} 45% 88%)`,tx:`hsl(${b} 25% 18%)`,mu:`hsl(${b} 12% 42%)`,ac:`hsl(${h} 70% 62%)`,g:`hsl(${b} 14% 58%)`,in:'#fff',ti:`hsl(${h} 60% 48%)`};
- for(const k in P)r.setProperty('--'+k,P[k]);r.colorScheme=d?'dark':'light';
+ const sk=(t.s==null?50:t.s)/100,lo=t.l||0,sh=['bg','card','line','g','in'],
+  fx=(v,k)=>v.replace(/hsl\((\d+) (\d+)% (\d+)%\)/g,(m,H,Sa,L)=>`hsl(${H} ${Math.round(Sa*sk)}% ${sh.includes(k)?Math.max(3,Math.min(99,+L+lo)):+L}%)`);
+ for(const k in P)r.setProperty('--'+k,fx(P[k],k));
+ r.setProperty('--gr',fx(`hsl(${h} ${d?55:65}% ${d?72:82}%)`,'x'));r.setProperty('--grt',fx(`hsl(${h} 45% ${d?16:22}%)`,'x'));r.setProperty('--bl',fx(`hsl(${h} ${d?60:70}% ${d?36:42}%)`,'x'));r.colorScheme=d?'dark':'light';
  const k=document.getElementById('dk');if(k)k.textContent=d?'☀ 밝게':'☾ 어둡게'}
 // ---------- 기기 연동(Firebase Realtime Database REST) ----------
 const DBURL='https://zzio-homework-default-rtdb.asia-southeast1.firebasedatabase.app'; // 여기에 데이터베이스 주소를 적어두면 매번 입력 안 해도 됨(선택)
@@ -230,6 +237,18 @@ function cloudUI(){const f=sget();$('#mo').innerHTML=`<div class="mo"><div><div 
  :`<p class="mu">같은 아이디·비밀번호로 로그인하면 폰과 컴퓨터의 기록이 같아져요. 로그인 안 해도 지금처럼 쓸 수 있어요.</p><p class="mu">⚠ 비밀번호를 잊으면 끝이에요 😅 복구할 수 없으니 꼭 기억해 두세요!</p>
  <p class="mu">아이디</p><input type="text" id="cid" value="${esc(f.id||'')}" style="width:100%"><p class="mu">비밀번호</p><input type="password" id="cpw" style="width:100%">
  <p><label><input type="checkbox" id="ckeep" checked> 로그인 유지</label></p><button data-a="login">로그인 / 새로 만들기</button><p class="mu" id="cm"></p>`)+`</div></div>`}
+// ---------- 요약 화면: 모든 서버·캐릭터의 진행도와 남은 숙제 ----------
+// 캐릭터 순서 바꾸기: 한 줄 목록에서 ▲▼
+function ordUI(){const L=S.chars[S.cur]||[];
+ $('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>↕ ${S.cur} 캐릭터 순서</b><button data-a="close">닫기</button></div>`+(L.length?L.map((c,i)=>`<div class="it"><span class="l">${i+1}. ${esc(c.name)}</span><button class="s g" data-a="ou" data-x="${i}">▲</button><button class="s g" data-a="od" data-x="${i}">▼</button></div>`).join(''):'<p class="mu">캐릭터가 없어요.</p>')+`</div></div>`}
+function sumUI(){let A=0,T=0;
+ const B=SV.map(s=>{const cs=S.chars[s]||[];if(!cs.length)return'';let sd=0,st=0;
+  const R=cs.map(c=>{const[d,t]=done(c);sd+=d;st+=t;
+   const left=S.items.filter(i=>(c.ck?.[i.id]||0)<i.k).map(i=>esc(i.n)+(i.k>1?` ${c.ck?.[i.id]||0}/${i.k}`:''));
+   return`<div style="margin:8px 0"><div class="hd" style="justify-content:space-between"><b>${esc(c.name)}</b><span class="pr">${d}/${t}</span></div><div class="gz"><div class="gf" style="width:${t?d/t*100:0}%"></div></div><div class="mu" style="margin-top:3px">${left.length?'남은 숙제: '+left.join(' · '):'✅ 모두 완료!'}</div></div>`}).join('');
+  A+=sd;T+=st;
+  return`<div class="gt hd" style="justify-content:space-between"><span>${s} · ${sd}/${st}</span><button class="s g" data-a="gosv" data-v="${s}">이 서버 보기</button></div>`+R}).join('');
+ $('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>📊 요약</b><button data-a="close">닫기</button></div>`+(B?`<p>전체 진행도 <b>${A}/${T}</b> (${T?Math.round(A/T*100):0}%)</p>${B}`:'<p class="mu">아직 캐릭터가 없어요.</p>')+`</div></div>`}
 // ---------- 침식 계산기 ----------
 const AB=[['허상의 정박지',15],['광기의 동굴',35],['흙어진 물길',40],['기타',0]];
 function cc(){const o=S.calc||{};if(o.V!=3){o.V=3}return S.calc=Object.assign({mode:'e',v:0,el:0,nt:0,rn:1,ab:0,T:15,D:10},o)}
@@ -274,8 +293,14 @@ function pal(){const t=S.theme;$('#mo').innerHTML=`<div class="mo"><div><div cla
  <p class="mu">추천 조합</p><div class="hd">${PRE.map((p,i)=>`<button class="s" data-a="pp" data-i="${i}" style="background:hsl(${p[1]} 70% 62%);border:3px solid ${p[3]?`hsl(${p[2]} 14% 16%)`:`hsl(${p[2]} 85% 92%)`}">${p[0]}</button>`).join('')}</div>
  <p class="mu">포인트 색 (버튼·제목)</p><input type="range" class="sl" id="sh" min="0" max="360" value="${t.h}">
  <p class="mu">배경 색</p><input type="range" class="sl" id="sb" min="0" max="360" value="${t.b}">
+ <p class="mu">채도 (낮을수록 차분해요)</p><input type="range" id="ss" min="0" max="100" value="${t.s==null?50:t.s}">
+ <p class="mu">밝기 (배경·카드)</p><input type="range" id="sl" min="-12" max="12" value="${t.l||0}">
+ 
+ 
  <p><button class="g" data-a="dk" id="dk">${t.d?'☀ 밝게':'☾ 어둡게'}</button></p></div></div>`}
 document.addEventListener('input',e=>{const t=e.target;if(t.id=='sh'||t.id=='sb'){S.theme[t.id=='sh'?'h':'b']=+t.value;theme();save()}});
+// 채도·밝기 슬라이더: 전체 색이 같이 바뀔니다
+document.addEventListener('input',e=>{const t=e.target;if(t.id=='ss'||t.id=='sl'){S.theme[t.id=='ss'?'s':'l']=+t.value;theme();save()}});
 // 룬/보석 한눈에 보기 실시간 갱신
 document.addEventListener('input',e=>{const t=e.target,cd=t.closest('[data-c]'),s=cd&&cd.querySelector('.sum');
  if(s&&/^(rune|gn|go)$/.test(t.dataset.f))s.innerHTML=sum(S.chars[S.cur].find(x=>x.id==cd.dataset.c))});
@@ -286,5 +311,3 @@ function tick(){const n=new Date(),d=new Date(n);d.setHours(6,0,0,0);if(d<=n)d.s
  $('#cd').innerHTML=`⏰ 매일 초기화(06:00)까지 <b>${f(d-n)}</b> · 주간 초기화(월 06:00)까지 <b>${f(w-n)}</b>`}
 theme();render();pull();tick();setInterval(tick,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
 </script></body></html>
-
-</body></html>
