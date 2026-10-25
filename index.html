@@ -61,14 +61,15 @@ let S;const KEY='hw_v1';
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.items)S=def();
 // 카테고리(그룹) 목록: 예전 데이터는 새 형식으로 변환
-function mig(){S.chars=S.chars||{};SV.forEach(s=>{if(!Array.isArray(S.chars[s]))S.chars[s]=Object.values(S.chars[s]||{})});if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}}mig();
+function mig(){S.chars=S.chars||{};SV.forEach(s=>{if(!Array.isArray(S.chars[s]))S.chars[s]=Object.values(S.chars[s]||{})});if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}
+ SV.forEach(s=>S.chars[s].forEach(c=>{if(!c.li){c.items=JSON.parse(JSON.stringify(S.items||[]));c.groups=JSON.parse(JSON.stringify(S.groups||[]));c.li=1}else{c.items=Array.isArray(c.items)?c.items:Object.values(c.items||{});c.groups=Array.isArray(c.groups)?c.groups:Object.values(c.groups||{})}}))}mig();
 const save=()=>{S.ts=Date.now();auto();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ask('저장 공간이 부족해요. 백업을 해주세요.')}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const open=new Set(),gv=new Set();let picC=null,editMode=false,cb=null;
 // 확인창(브라우저 기본 팝업은 이 페이지에서 막혀서 직접 만든 팝업 사용)
 function ask(msg,fn){cb=fn||null;document.querySelector('#mo').innerHTML=`<div class="mo"><div><p>${esc(msg)}</p><div class="hd"><button class="r" data-a="yes">확인</button><button class="g" data-a="no">취소</button></div></div></div>`}
 const $=s=>document.querySelector(s);
-const done=c=>{let d=0,t=0;S.items.forEach(i=>{t+=i.k;d+=Math.min(i.k,c.ck?.[i.id]||0)});return[d,t]};
+const done=c=>{let d=0,t=0;(c.items||[]).forEach(i=>{t+=i.k;d+=Math.min(i.k,c.ck?.[i.id]||0)});return[d,t]};
 
 // ---------- 화면 ----------
 function render(){
@@ -76,7 +77,7 @@ function render(){
  $('#app').innerHTML=`<div class="tabs">${SV.map(s=>`<button data-a="sv" data-v="${s}" class="${s==S.cur?'on':''}">${s} (${(S.chars[s]||[]).length})</button>`).join('')}</div>
  <div class="bar"><b>현재 서버: ${S.cur}</b><div class="hd"><button class="g" data-a="ord">↕ 순서 바꾸기</button><button data-a="addc">+ 캐릭터 추가</button>
  <button class="g" data-a="rs" data-m="d">서버 매일 초기화</button><button class="g" data-a="rs" data-m="w">서버 전체 초기화(주간 포함)</button></div></div>
- ${editMode?'<p class="mu">✏️ 항목 편집 중이에요. 이름 수정, 매일/주간 선택, 체크 칸 수, ⧉ 복제, ✕ 삭제, 카테고리 이름·순서(▲▼) 변경, “+ 항목 추가”를 할 수 있어요(모든 캐릭터에 공통 적용). 끝나면 위의 “편집 끝”을 눌러주세요.</p>':''}${cs.length?'':'<p class="mu">아직 캐릭터가 없어요. “+ 캐릭터 추가”를 눌러보세요.</p>'}
+ ${editMode?'<p class="mu">✏️ 항목 편집 중이에요. 이름 수정, 매일/주간 선택, 체크 칸 수, ⧉ 복제, ✕ 삭제, 카테고리 이름·순서(▲▼) 변경, “+ 항목 추가”를 할 수 있어요(이 캐릭터에만 적용돼요. 다른 캐릭터는 그대로예요). 끝나면 위의 “편집 끝”을 눌러주세요.</p>':''}${cs.length?'':'<p class="mu">아직 캐릭터가 없어요. “+ 캐릭터 추가”를 눌러보세요.</p>'}
  <div class="grid">${cs.map(card).join('')}</div>`;
 }
 function card(c){
@@ -108,7 +109,7 @@ function sum(c){
  return`<b>📋 룬 한눈에</b><div>${R||'아직 없어요'}</div><b>💎 보석 한눈에</b>${G||'<div>아직 없어요</div>'}`;
 }
 function hw(c){
- return S.groups.map(G=>{const gi=G.id,its=S.items.filter(i=>i.g==gi);if(!its.length&&!editMode)return'';
+ return (editMode?'<div class="hd" style="margin:4px 0"><button class="s g" data-a="lcp">📋 이 캐릭터 목록 복사</button><button class="s g" data-a="lps">📥 목록 붙여넣기</button></div>':'')+c.groups.map(G=>{const gi=G.id,its=c.items.filter(i=>i.g==gi);if(!its.length&&!editMode)return'';
  return`<div class="gt">${editMode?`<span class="hd" data-gid="${gi}"><input type="text" data-f="gname" value="${esc(G.n)}" style="width:140px"><button class="s g" data-a="gup">▲</button><button class="s g" data-a="gdn">▼</button><button class="s r" data-a="gdel">✕</button></span>`:esc(G.n)}</div>`+its.map(i=>{const n=c.ck?.[i.id]||0;
  if(editMode)return`<div class="it" data-i="${i.id}"><input type="text" class="l" data-f="in" value="${esc(i.n)}" style="flex:1"><select data-f="ic"><option value="d" ${i.c=='d'?'selected':''}>매일</option><option value="w" ${i.c=='w'?'selected':''}>주간</option></select><input type="number" min="1" max="9" data-f="ik" value="${i.k}" style="width:46px" title="체크 칸 수"><button class="s g" data-a="dupi" title="복제">⧉</button><button class="s r" data-a="deli">✕</button></div>`;
  return`<div class="it"><span class="l">${esc(i.n)}</span><span class="bd">${i.c=='d'?'매일':'주간'}</span>`+
@@ -117,18 +118,7 @@ function hw(c){
 // ---------- 초기화 ----------
 function reset(list,m,label){
  ask(label+' '+(m=='d'?'매일 항목만':'모든 항목(주간 포함)')+' 해제할까요?',()=>{
- list.forEach(c=>S.items.forEach(i=>{if(m=='w'||i.c=='d')delete(c.ck||{})[i.id]}));save();render()});
-}
-
-// ---------- 설정창 ----------
-function cfg(){
- $('#mo').innerHTML=`<div class="mo"><div><div class="hd" style="justify-content:space-between"><b>공통 항목 설정</b><button data-a="close">닫기</button></div>
- <p class="mu">모든 캐릭터 공통 목록이에요. 이름 수정·주기·횟수 변경·삭제가 가능하고, 기존 체크 기록은 유지돼요.</p>
- ${GR.map((g,gi)=>`<div class="gt">${g}</div>`+S.items.filter(i=>i.g==gi).map(i=>`<div class="it" data-i="${i.id}">
- <input type="text" class="l" data-f="in" value="${esc(i.n)}" style="flex:1">
- <select data-f="ic"><option value="d" ${i.c=='d'?'selected':''}>매일</option><option value="w" ${i.c=='w'?'selected':''}>주간</option></select>
- <input type="number" min="1" max="9" data-f="ik" value="${i.k}" style="width:50px"><button class="s r" data-a="deli">✕</button></div>`).join('')+
- `<button class="s g" data-a="addi" data-g="${gi}">+ 항목 추가</button>`).join('')}</div></div>`;
+ list.forEach(c=>(c.items||[]).forEach(i=>{if(m=='w'||i.c=='d')delete(c.ck||{})[i.id]}));save();render()});
 }
 
 // ---------- 이벤트 ----------
@@ -136,7 +126,7 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b)return;
  const a=b.dataset.a,cd=b.closest('[data-c]'),c=cd&&S.chars[S.cur].find(x=>x.id==cd.dataset.c);
  if(a=='sv'){S.cur=b.dataset.v;save();render()}
- else if(a=='addc'){S.chars[S.cur].push({id:uid(),name:'새 캐릭터',ck:{}});save();render()}
+ else if(a=='addc'){const L=S.chars[S.cur],pv=L[L.length-1]||{items:S.items,groups:S.groups};L.push({id:uid(),name:'새 캐릭터',ck:{},li:1,items:JSON.parse(JSON.stringify(pv.items||[])),groups:JSON.parse(JSON.stringify(pv.groups||[]))});save();render()}
  else if(a=='ord')ordUI();
  else if(a=='ou'||a=='od'){const L=S.chars[S.cur],x=+b.dataset.x,y=x+(a=='ou'?-1:1);if(y>=0&&y<L.length){[L[x],L[y]]=[L[y],L[x]];save();ordUI()}}
  else if(a=='sum')sumUI();
@@ -168,12 +158,14 @@ document.addEventListener('click',e=>{
  else if(a=='yes'){const f=cb;cb=null;$('#mo').innerHTML='';if(f)f()}
  else if(a=='no'){cb=null;$('#mo').innerHTML=''}
  else if(a=='close'){$('#mo').innerHTML='';render()}
- else if(a=='addi'){{const g=b.dataset.g,l=S.items.filter(i=>i.g==g).pop();S.items.push(mk(g,'새 항목',l?l.c:'d',l?l.k:1))}save();render()}
- else if(a=='gup'||a=='gdn'){const id=b.closest('[data-gid]').dataset.gid,L=S.groups,x=L.findIndex(g=>g.id==id),y=x+(a=='gup'?-1:1);if(y>=0&&y<L.length){[L[x],L[y]]=[L[y],L[x]];save();render()}}
- else if(a=='gdel'){const id=b.closest('[data-gid]').dataset.gid;ask('이 카테고리와 안의 항목을 모두 삭제할까요? (체크 기록도 사라져요)',()=>{S.groups=S.groups.filter(g=>g.id!=id);S.items=S.items.filter(i=>i.g!=id);save();render()})}
- else if(a=='addg'){S.groups.push({id:uid(),n:'새 카테고리'});save();render()}
- else if(a=='dupi'){const id=b.closest('[data-i]').dataset.i,x=S.items.findIndex(i=>i.id==id);S.items.splice(x+1,0,{...S.items[x],id:uid()});save();render()}
- else if(a=='deli'){const id=b.closest('[data-i]').dataset.i;ask('이 항목을 삭제할까요? (체크 기록도 사라져요)',()=>{S.items=S.items.filter(i=>i.id!=id);save();render()})}
+ else if(a=='lcp'){S.lclip={items:JSON.parse(JSON.stringify(c.items)),groups:JSON.parse(JSON.stringify(c.groups))};save();toast('목록 복사됨 ✓')}
+ else if(a=='lps'){if(!S.lclip)return toast('먼저 복사해 주세요');ask('이 캐릭터의 항목 목록을 복사한 목록으로 바꿀까요? (이 캐릭터의 체크 기록은 해제돼요)',()=>{c.items=JSON.parse(JSON.stringify(S.lclip.items||[]));c.groups=JSON.parse(JSON.stringify(S.lclip.groups||[]));c.ck={};save();render()})}
+ else if(a=='addi'){{const g=b.dataset.g,l=c.items.filter(i=>i.g==g).pop();c.items.push(mk(g,'새 항목',l?l.c:'d',l?l.k:1))}save();render()}
+ else if(a=='gup'||a=='gdn'){const id=b.closest('[data-gid]').dataset.gid,L=c.groups,x=L.findIndex(g=>g.id==id),y=x+(a=='gup'?-1:1);if(y>=0&&y<L.length){[L[x],L[y]]=[L[y],L[x]];save();render()}}
+ else if(a=='gdel'){const id=b.closest('[data-gid]').dataset.gid;ask('이 카테고리와 안의 항목을 모두 삭제할까요? (체크 기록도 사라져요)',()=>{c.groups=c.groups.filter(g=>g.id!=id);c.items=c.items.filter(i=>i.g!=id);save();render()})}
+ else if(a=='addg'){c.groups.push({id:uid(),n:'새 카테고리'});save();render()}
+ else if(a=='dupi'){const id=b.closest('[data-i]').dataset.i,x=c.items.findIndex(i=>i.id==id);c.items.splice(x+1,0,{...c.items[x],id:uid()});save();render()}
+ else if(a=='deli'){const id=b.closest('[data-i]').dataset.i;ask('이 항목을 삭제할까요? (체크 기록도 사라져요)',()=>{c.items=c.items.filter(i=>i.id!=id);save();render()})}
  else if(a=='exp'){const u=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='숙제백업.json';l.click()}
  else if(a=='imp')$('#fi').click();
 });
@@ -184,10 +176,10 @@ document.addEventListener('input',e=>{
  const cd=t.closest('[data-c]'),c=cd&&S.chars[S.cur].find(x=>x.id==cd.dataset.c);
  if(f=='name')c.name=t.value;
  else if(f=='rune'){c.gear[t.dataset.p].rune=t.value;t.closest('details').querySelector('small').textContent=t.value||'룬 미입력'}
- else if(f=='gname')S.groups.find(g=>g.id==t.closest('[data-gid]').dataset.gid).n=t.value;
+ else if(f=='gname')c.groups.find(g=>g.id==t.closest('[data-gid]').dataset.gid).n=t.value;
  else if(f=='gn')c.gear[t.dataset.p].gems[t.dataset.g].n=t.value;
  else if(f=='go')c.gear[t.dataset.p].gems[t.dataset.g].o[t.dataset.o]=t.value;
- else{const i=S.items.find(x=>x.id==t.closest('[data-i]').dataset.i);
+ else{const i=c.items.find(x=>x.id==t.closest('[data-i]').dataset.i);
   if(f=='in')i.n=t.value;else if(f=='ic')i.c=t.value;else if(f=='ik')i.k=Math.max(1,Math.min(9,+t.value||1))}
  save();
 });
@@ -244,7 +236,7 @@ function ordUI(){const L=S.chars[S.cur]||[];
 function sumUI(){let A=0,T=0;
  const B=SV.map(s=>{const cs=S.chars[s]||[];if(!cs.length)return'';let sd=0,st=0;
   const R=cs.map(c=>{const[d,t]=done(c);sd+=d;st+=t;
-   const left=S.items.filter(i=>(c.ck?.[i.id]||0)<i.k).map(i=>esc(i.n)+(i.k>1?` ${c.ck?.[i.id]||0}/${i.k}`:''));
+   const left=(c.items||[]).filter(i=>(c.ck?.[i.id]||0)<i.k).map(i=>esc(i.n)+(i.k>1?` ${c.ck?.[i.id]||0}/${i.k}`:''));
    return`<div style="margin:8px 0"><div class="hd" style="justify-content:space-between"><b>${esc(c.name)}</b><span class="pr">${d}/${t}</span></div><div class="gz"><div class="gf" style="width:${t?d/t*100:0}%"></div></div><div class="mu" style="margin-top:3px">${left.length?'남은 숙제: '+left.join(' · '):'✅ 모두 완료!'}</div></div>`}).join('');
   A+=sd;T+=st;
   return`<div class="gt hd" style="justify-content:space-between"><span>${s} · ${sd}/${st}</span><button class="s g" data-a="gosv" data-v="${s}">이 서버 보기</button></div>`+R}).join('');
