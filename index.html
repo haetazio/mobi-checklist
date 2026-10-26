@@ -67,7 +67,7 @@ try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.items)S=def();
 // 카테고리(그룹) 목록: 예전 데이터는 새 형식으로 변환
 function mig(){S.chars=S.chars||{};SV.forEach(s=>{if(!Array.isArray(S.chars[s]))S.chars[s]=Object.values(S.chars[s]||{})});if(!S.groups){S.groups=GR.map((n,i)=>({id:'g'+i,n}));S.items.forEach(i=>{if(typeof i.g=='number')i.g='g'+i.g})}
- SV.forEach(s=>S.chars[s].forEach(c=>{if(!c.li){c.items=JSON.parse(JSON.stringify(S.items||[]));c.groups=JSON.parse(JSON.stringify(S.groups||[]));c.li=1}else{c.items=Array.isArray(c.items)?c.items:Object.values(c.items||{});c.groups=Array.isArray(c.groups)?c.groups:Object.values(c.groups||{})}}))}mig();
+ SV.forEach(s=>S.chars[s].forEach(c=>{if(!c.li){c.items=JSON.parse(JSON.stringify(S.items||[]));c.groups=JSON.parse(JSON.stringify(S.groups||[]));c.li=1}else{c.items=Array.isArray(c.items)?c.items:Object.values(c.items||{});c.groups=Array.isArray(c.groups)?c.groups:Object.values(c.groups||{})}if(!c.gv){if(c.gear){gd(c);gfit(c)}c.gv=1}}))}mig();
 const save=()=>{S.ts=Date.now();auto();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ask('저장 공간이 부족해요. 백업을 해주세요.')}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const open=new Set(),gv=new Set();let picC=null,editMode=false,cb=null;
@@ -97,6 +97,11 @@ function card(c){
  ${gv.has(c.id)?gear(c):hw(c)}</div>`;
 }
 // 장비 데이터 정리(예전 형식이면 새 형식으로 변환)
+// 기본 보석 칸 수 맞추기(한 번만): 무기 3칸, 장신구 1칸. 비어 있는 칸만 줄이고, 적어 둔 보석은 지우지 않음
+function gfit(c){const W={'무기':3,'장신구1':1,'장신구2':1,'장신구3':1};
+ Object.keys(W).forEach(p=>{const g=c.gear[p];if(!g)return;const n=W[p],G=g.gems;
+  while(G.length<n)G.push({n:'',o:['','','']});
+  while(G.length>n){const m=G[G.length-1];if(m.n||m.o.some(Boolean))break;G.pop()}})}
 function gd(c){c.gear=c.gear||{};PARTS.forEach(([p,n])=>{let g=c.gear[p];
  if(Array.isArray(g))g={rune:(g.find(x=>x.r)||{}).r||'',gems:g.map(x=>({n:x.r||'',o:x.o.map(y=>[y.n,y.v].filter(Boolean).join(' '))}))};
  if(!g){g={rune:'',gems:[]};for(let i=0;i<n;i++)g.gems.push({n:'',o:['','','']})}
@@ -131,7 +136,7 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b)return;
  const a=b.dataset.a,cd=b.closest('[data-c]'),c=cd&&S.chars[S.cur].find(x=>x.id==cd.dataset.c);
  if(a=='sv'){S.cur=b.dataset.v;save();render()}
- else if(a=='addc'){const L=S.chars[S.cur],pv=L[L.length-1]||{items:S.items,groups:S.groups};L.push({id:uid(),name:'새 캐릭터',ck:{},li:1,items:JSON.parse(JSON.stringify(pv.items||[])),groups:JSON.parse(JSON.stringify(pv.groups||[]))});save();render()}
+ else if(a=='addc'){const L=S.chars[S.cur],pv=L[L.length-1]||{items:S.items,groups:S.groups};L.push({id:uid(),name:'새 캐릭터',ck:{},li:1,gv:1,items:JSON.parse(JSON.stringify(pv.items||[])),groups:JSON.parse(JSON.stringify(pv.groups||[]))});save();render()}
  else if(a=='ord')ordUI();
  else if(a=='ou'||a=='od'){const L=S.chars[S.cur],x=+b.dataset.x,y=x+(a=='ou'?-1:1);if(y>=0&&y<L.length){[L[x],L[y]]=[L[y],L[x]];save();ordUI()}}
  else if(a=='sum')sumUI();
